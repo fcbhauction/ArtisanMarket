@@ -4,11 +4,36 @@ import { db } from "../firebase/config";
 import { onSnapshot, doc, setDoc } from "firebase/firestore";
 import { unflattenItems } from "../firebase/utils";
 import { ItemsContext } from "./ItemsContext";
+import yaml from "js-yaml";
 
 export const ItemsProvider = ({ demo, children }) => {
   const [items, setItems] = useState([]);
 
   useEffect(() => {
+    // Use demo data directly from items.yml when demo is true
+    if (demo) {
+      console.debug("<ItemsProvider /> loading demo data from items.yml");
+      fetch(import.meta.env.BASE_URL + "items.yml")
+        .then((response) => response.text())
+        .then((text) => yaml.load(text))
+        .then((demoItems) => {
+          // Process demo items to match the format expected by the app
+          const processedItems = demoItems.map(item => {
+            return {
+              ...item,
+              id: item.id,
+              startingPrice: item.amount,
+              endTime: new Date(item.endTime),
+              bids: {}
+            };
+          });
+          setItems(processedItems);
+        })
+        .catch(error => console.error("Error loading demo data:", error));
+      return; // Skip Firebase setup when in demo mode
+    }
+
+    // Only connect to Firebase when not in demo mode
     const docRef = doc(db, "auction", "items");
     const unsubscribe = onSnapshot(docRef, (doc) => {
       if (doc.exists()) {
@@ -22,7 +47,12 @@ export const ItemsProvider = ({ demo, children }) => {
       }
     });
 
-    return () => unsubscribe(); // Clean up the listener on unmount
+    return () => {
+      // Clean up the listener on unmount (only if not in demo mode)
+      if (!demo && unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [demo]);
 
   return (

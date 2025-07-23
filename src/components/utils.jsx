@@ -22,7 +22,7 @@ export const unflattenItems = (doc, demo) => {
   let items = {};
   for (const [key, value] of Object.entries(doc.data())) {
     const parsed = parseField(key);
-    if (!parsed) continue; // Skip invalid keys
+    if (!parsed) continue; // skip keys that don't match pattern
     const { item, bid } = parsed;
 
     if (!(item in items)) items[item] = { bids: {} };
@@ -76,20 +76,15 @@ export const editItems = (id = undefined, updateItems = false, deleteBids = fals
             // Convert ISO date into Firestore Timestamp
             newItem.endTime = Timestamp.fromDate(new Date(newItem.endTime));
             // Filter fields to the ones for the current newItem
-          fields
-              .filter((field) => {
-                const parsed = parseField(field);
-                return parsed && parsed.item === newItem.id;
-              })
+            fields
+              .filter((field) => parseField(field).item === newItem.id)
               .forEach((field) => {
-                const parsed = parseField(field);
-                if (updateItems && parsed && parsed.bid === 0)
+                if (updateItems && parseField(field).bid === 0)
                   updates[field] = newItem;
-                if (deleteBids && parsed && parsed.bid)
+                if (deleteBids && parseField(field).bid)
                   updates[field] = deleteField();
               });
           });
-          console.log('Items to upload:', items);
           return updates;
         })
         .then((updates) => {
@@ -98,3 +93,4 @@ export const editItems = (id = undefined, updateItems = false, deleteBids = fals
         });
     });
 };
+  
