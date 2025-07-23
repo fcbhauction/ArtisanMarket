@@ -39,7 +39,7 @@ function App() {
         <Navbar admin={admin} />
         <SignUpModal />
         <Routes>
-          <Route path={import.meta.env.BASE_URL} Component={HomePage} />
+          <Route path={import.meta.env.BASE_URL} element={<HomePage />} />
           <Route
             exact
             path={import.meta.env.BASE_URL + "admin"}
